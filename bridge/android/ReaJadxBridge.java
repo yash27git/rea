@@ -434,14 +434,22 @@ class ReaJadxBridge {
     String minSdk = "";
     String targetSdk = "";
     List<String> permissions = new ArrayList<>();
+    List<Map<String, Object>> permissionDeclarations = new ArrayList<>();
     for (Node child = root.getFirstChild(); child != null; child = child.getNextSibling()) {
       if (!(child instanceof Element element) || element.getNamespaceURI() != null) continue;
       if (element.getTagName().equals("uses-sdk")) {
         minSdk = element.getAttributeNS(android, "minSdkVersion");
         targetSdk = element.getAttributeNS(android, "targetSdkVersion");
-      } else if (element.getTagName().equals("uses-permission")) {
+      } else if (element.getTagName().equals("uses-permission")
+          || element.getTagName().equals("uses-permission-sdk-23")) {
         String permission = element.getAttributeNS(android, "name");
-        if (!permission.isEmpty()) permissions.add(permission);
+        if (!permission.isEmpty()) {
+          permissions.add(permission);
+          permissionDeclarations.add(Map.of(
+              "permission", permission,
+              "declaration", element.getTagName(),
+              "max_sdk_version", element.getAttributeNS(android, "maxSdkVersion")));
+        }
       }
     }
     Map<String, Object> summary = new LinkedHashMap<>();
@@ -451,6 +459,7 @@ class ReaJadxBridge {
     summary.put("min_sdk", minSdk);
     summary.put("target_sdk", targetSdk);
     summary.put("permissions", List.copyOf(permissions));
+    summary.put("permission_declarations", List.copyOf(permissionDeclarations));
     return Collections.unmodifiableMap(summary);
   }
 
